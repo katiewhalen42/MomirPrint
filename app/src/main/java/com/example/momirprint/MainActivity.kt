@@ -75,17 +75,13 @@ class SearchViewModel : ViewModel() {
 
     fun sendQuery() {
         viewModelScope.launch{
-            apiService.searchCards("q=${query}", ).let { result ->
-                searchResult = result
-            }
+            searchResult = apiService.searchCards(query).data.firstOrNull()
         }
     }
 }
 
 @Composable
 fun TestCardDisplay(card: MagicCard) {
-    var card by remember { mutableStateOf(card) }
-
     Text(
         text = card.toString()
     )
@@ -94,7 +90,7 @@ fun TestCardDisplay(card: MagicCard) {
 @Preview
 @Composable
 fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifier = Modifier) {
-    var searchResult by remember { mutableStateOf<MagicCard>(MagicCard()) }
+    val searchResult = viewModel.searchResult ?: MagicCard()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -116,7 +112,6 @@ fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifie
             Button(
                 onClick = {
                     viewModel.sendQuery()
-                    searchResult = viewModel.searchResult ?: MagicCard()
                 }
             ) {
                 Text("Search")

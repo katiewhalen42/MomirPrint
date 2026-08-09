@@ -17,7 +17,7 @@ interface ApiService {
     suspend fun getRandomCard(@Query("q") query: String, @Query("format") format: String): MagicCard
 
     @GET ("cards/search")
-    suspend fun searchCards(@Query("q") query: String): MagicCard
+    suspend fun searchCards(@Query("q") query: String): CardSearchResponse
 
     //@GET ("cards/autocomplete")
     //suspend fun getCardAutocomplete(@Query("q") query: String): AutocompleteResponse
@@ -29,6 +29,13 @@ object ScryfallApi {
     }
 
     private val httpClient = OkHttpClient.Builder()
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .addHeader("Accept", "application/json")
+                .addHeader("User-Agent", "MomirPrint/0.1")
+                .build()
+            chain.proceed(request)
+        }
         .addInterceptor(loggingInterceptor)
         .build()
 

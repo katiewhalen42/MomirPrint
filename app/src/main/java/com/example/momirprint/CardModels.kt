@@ -38,3 +38,11 @@ data class MagicCard(
         "Image URIs: $image_uris")
     }
 }
+
+data class CardSearchResponse(
+    val `object`: String = "",
+    val total_cards: Int = 0,
+    val has_more: Boolean = false,
+    val data: List<MagicCard> = emptyList()
+)
+
