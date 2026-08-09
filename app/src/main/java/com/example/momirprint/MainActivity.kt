@@ -40,7 +40,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             MomirPrintTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    TestSearchScreen(
+                    /*TestSearchScreen(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .wrapContentSize(Alignment.Center)
+                    )*/
+
+                    RandomScreen(
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
@@ -76,6 +83,17 @@ class SearchViewModel : ViewModel() {
     fun sendQuery() {
         viewModelScope.launch{
             searchResult = apiService.searchCards(query).data.firstOrNull()
+        }
+    }
+}
+
+class RandomViewModel : ViewModel() {
+    val apiService = ScryfallApi.service
+    var randomCard by mutableStateOf<MagicCard?>(null)
+
+    fun fetchRandomCard(query: String? = null, format: String? = null) {
+        viewModelScope.launch {
+            randomCard = apiService.getRandomCard(query, format)
         }
     }
 }
@@ -116,6 +134,25 @@ fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifie
             ) {
                 Text("Search")
             }
+        }
+    }
+}
+
+@Composable
+fun RandomScreen(viewModel: RandomViewModel = viewModel(), modifier: Modifier = Modifier) {
+    val randomCard = viewModel.randomCard ?: MagicCard()
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TestCardDisplay(randomCard)
+
+        Button(
+            onClick = {
+                viewModel.fetchRandomCard()
+            }
+        ) {
+            Text("Fetch Random Card")
         }
     }
 }

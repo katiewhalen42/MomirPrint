@@ -14,7 +14,7 @@ interface ApiService {
     suspend fun getCardByName(@Query("fuzzy") name: String): MagicCard
 
     @GET ("cards/random")
-    suspend fun getRandomCard(@Query("q") query: String, @Query("format") format: String): MagicCard
+    suspend fun getRandomCard(@Query("q") query: String? = null, @Query("format") format: String? = null): MagicCard
 
     @GET ("cards/search")
     suspend fun searchCards(@Query("q") query: String): CardSearchResponse
