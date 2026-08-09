@@ -5,12 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,7 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -37,7 +41,10 @@ class MainActivity : ComponentActivity() {
             MomirPrintTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     TestSearchScreen(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .wrapContentSize(Alignment.Center)
                     )
                 }
             }
@@ -68,7 +75,7 @@ class SearchViewModel : ViewModel() {
 
     fun sendQuery() {
         viewModelScope.launch{
-            apiService.searchCards(query).let { result ->
+            apiService.searchCards("q=${query}", ).let { result ->
                 searchResult = result
             }
         }
@@ -87,31 +94,33 @@ fun TestCardDisplay(card: MagicCard) {
 @Preview
 @Composable
 fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifier = Modifier) {
-    val apiService = ScryfallApi.service
-    var text by remember { mutableStateOf("") }
     var searchResult by remember { mutableStateOf<MagicCard>(MagicCard()) }
 
-    TestCardDisplay(searchResult)
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TextField(
-            value = text,
-            onValueChange = { newText -> text = newText },
-            label = { Text("Card Search") }
-        )
+        TestCardDisplay(searchResult)
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Button(
-            onClick = {
-                viewModel.sendQuery()
-                searchResult = viewModel.searchResult ?: MagicCard()
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Search")
+            TextField(
+                value = viewModel.query,
+                onValueChange = { newText -> viewModel.query = newText },
+                label = { Text("Card Search") }
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    viewModel.sendQuery()
+                    searchResult = viewModel.searchResult ?: MagicCard()
+                }
+            ) {
+                Text("Search")
+            }
         }
     }
 }
