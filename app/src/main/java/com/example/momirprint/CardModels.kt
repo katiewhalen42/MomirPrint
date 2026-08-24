@@ -23,7 +23,8 @@ data class MagicCard(
     val loyalty: String = "",
     val card_faces: List<CardFace> = emptyList<CardFace>(),
     val color_indicator: List<String> = emptyList(),
-    val image_uris: Map<String, String> = emptyMap()
+    val image_uris: Map<String, String> = emptyMap(),
+    val scryfall_uri: String = ""
 ) {
     override fun toString(): String {
         return("Name: $name\n" +
