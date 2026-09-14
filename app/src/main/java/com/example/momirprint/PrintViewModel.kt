@@ -39,7 +39,7 @@ data class PrintUIState(
 )
 
 class PrintViewModel (private val settingsRepository: SettingsRepository,
-                      private val apiService: ScryfallApi) : ViewModel() {
+                      private val apiService: ApiService) : ViewModel() {
 
     private val _uiState = mutableStateOf(PrintUIState())
     val uiState = _uiState
@@ -87,7 +87,7 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(cardState = CardState.Loading)
             try {
-                val card = apiService.service.getRandomCard(query)
+                val card = apiService.getRandomCard(query)
                 _uiState.value = _uiState.value.copy(selectedCard = card, cardState = CardState.Ready)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(cardState = CardState.Error(e.message ?: "Unknown error"))
@@ -126,7 +126,7 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
         return queryParts.joinToString(" ")
     }
 
-    fun print()
+    fun print() {
         val card = _uiState.value.selectedCard
         //TODO: Implement printing logic using PrinterService
     }

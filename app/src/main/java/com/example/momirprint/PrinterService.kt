@@ -61,4 +61,19 @@ class PrinterService(private val context: Context) {
             Result.failure(Exception("Unknown error: ${e.message}"))
         }
     }
+
+    fun printImage(bitmap: android.graphics.Bitmap): Result<Unit> {
+        return try {
+            printer?.printFormattedText("[C]<img>${com.dantsu.escposprinter.textparser.PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)}</img>\n")
+            Result.success(Unit)
+        } catch (e: EscPosConnectionException) {
+            Result.failure(Exception("Connection error: ${e.message}"))
+        } catch (e: EscPosParserException) {
+            Result.failure(Exception("Parser error: ${e.message}"))
+        } catch (e: EscPosEncodingException) {
+            Result.failure(Exception("Encoding error: ${e.message}"))
+        } catch (e: Exception) {
+            Result.failure(Exception("Unknown error: ${e.message}"))
+        }
+    }
 }
