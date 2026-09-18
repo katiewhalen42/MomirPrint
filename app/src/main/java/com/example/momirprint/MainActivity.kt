@@ -1,5 +1,6 @@
 package com.example.momirprint
 
+import android.R.id.tabs
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,11 +11,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -30,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.momirprint.ui.theme.MomirPrintTheme
 import kotlinx.coroutines.launch
 
@@ -39,20 +53,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MomirPrintTheme {
+                val navController = rememberNavController()
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    /*TestSearchScreen(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxSize()
-                            .wrapContentSize(Alignment.Center)
-                    )*/
-
-                    RandomScreen(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxSize()
-                            .wrapContentSize(Alignment.Center)
-                    )
+                    NavHost(
+                        navController = navController,
+                        startDestination = "print",
+                        modifier = Modifier.padding(innerPadding)
+                    ){
+                        composable("print") {
+                            val printViewModel: PrintViewModel = viewModel(factory = PrintViewModelFactory(
+                                SettingsRepository(applicationContext),
+                                ScryfallApi.service))
+                            PrintScreen(navController = navController)
+                        }
+                        composable("settings") {
+                            SettingsScreen(navController = navController)
+                        }
+                    }
                 }
             }
         }
@@ -154,5 +171,23 @@ fun RandomScreen(viewModel: RandomViewModel = viewModel(), modifier: Modifier = 
         ) {
             Text("Fetch Random Card")
         }
+    }
+}
+
+@Composable
+fun PrintScreen(viewModel: PrintViewModel, onSettingsClick : () -> Unit){
+    val state by viewModel.uiState
+
+    Column(Modifier.fillMaxSize().padding(20.dp)) {
+        Row(Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+            Text("Print a card", style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = onSettingsClick) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
     }
 }
