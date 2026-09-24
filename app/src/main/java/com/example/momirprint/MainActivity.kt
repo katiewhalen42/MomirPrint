@@ -24,6 +24,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
@@ -122,7 +125,7 @@ fun TestCardDisplay(card: MagicCard) {
     )
 }
 
-@Preview
+/*@Preview
 @Composable
 fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifier = Modifier) {
     val searchResult = viewModel.searchResult ?: MagicCard()
@@ -153,11 +156,11 @@ fun TestSearchScreen(viewModel: SearchViewModel = viewModel(), modifier: Modifie
             }
         }
     }
-}
+}*/
 
 @Composable
-fun RandomScreen(viewModel: RandomViewModel = viewModel(), modifier: Modifier = Modifier) {
-    val randomCard = viewModel.randomCard ?: MagicCard()
+fun RandomScreen(viewModel: PrintViewModel = viewModel(), modifier: Modifier = Modifier) {
+    val randomCard = viewModel.uiState.value.selectedCard ?: MagicCard()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -166,7 +169,7 @@ fun RandomScreen(viewModel: RandomViewModel = viewModel(), modifier: Modifier = 
 
         Button(
             onClick = {
-                viewModel.fetchRandomCard()
+                viewModel.reroll()
             }
         ) {
             Text("Fetch Random Card")
@@ -189,5 +192,32 @@ fun PrintScreen(viewModel: PrintViewModel, onSettingsClick : () -> Unit){
         }
 
         Spacer(Modifier.height(16.dp))
+
+        PrintModeTabs(
+            selectedMode = state.queryMode,
+            onModeSelected = { viewModel.setMode(it) }
+        )
+
+        when (state.queryMode) {
+            QueryMode.RANDOM -> RandomScreen(viewModel = viewModel)
+            QueryMode.SEARCH -> SearchScreen(viewModel = viewModel)
+        }
+    }
+}
+
+@Composable
+fun PrintModeTabs(selectedMode: QueryMode, onModeSelected: (QueryMode) -> Unit) {
+    val options = QueryMode.values().toList()
+
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = mode == selectedMode,
+                onClick = { onModeSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
+            ) {
+                Text(text = mode.name)
+            }
+        }
     }
 }
