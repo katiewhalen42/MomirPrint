@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -192,4 +193,39 @@ fun CardPreview(card: MagicCard?, cardState: CardState) {
 @Composable
 fun SearchScreen(viewModel: PrintViewModel) {
 
+}
+
+@Composable
+fun RandomPanel(state: PrintUIState, viewModel: PrintViewModel) {
+	RandomModeTabs(selectedMode = state.randomMode, onModeSelected = { viewModel.setRandomMode(it) })
+
+	when(state.randomMode) {
+		RandomMode.FILTERS -> { FilterSection(state = state, viewModel = viewModel) }
+	}
+}
+
+@Composable
+fun RandomModeTabs(selectedMode: RandomMode, onModeSelected: (RandomMode) -> Unit) {
+	val options = RandomMode.values().toList()
+
+	SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+		options.forEachIndexed { index, mode ->
+			SegmentedButton(
+				selected = mode == selectedMode,
+				onClick = { onModeSelected(mode) },
+				shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+				icon = {}
+			) {
+				Text(text = mode.name)
+			}
+		}
+	}
+}
+
+@Composable
+fun FilterSection(state: PrintUIState, viewModel: PrintViewModel) {
+	Text("Filter by Type", style = MaterialTheme.typography.labelSmall)
+	FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+
+	}
 }
