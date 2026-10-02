@@ -5,14 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
 import retrofit2.HttpException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
-enum class QueryMode{
-    RANDOM,
-    SEARCH_FILTER
+enum class QueryMode {
+    SEARCH_FILTER,
+    MOMIR
 }
 /*enum class RandomMode{
     FILTERS,
