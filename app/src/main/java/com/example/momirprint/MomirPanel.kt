@@ -36,7 +36,7 @@ fun MomirPanel(
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            "Draws a random creature of the chosen mana value, like casting off Momir Vig. " +
+            "Draws a random creature of the chosen mana value. " +
                 "Filters are ignored in this mode.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
