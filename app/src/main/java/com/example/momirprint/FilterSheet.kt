@@ -9,23 +9,31 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -204,7 +212,7 @@ fun FilterSheetContent(
                 }
             }
 
-            FilterGroup("Format") {
+            FilterGroup("Format rules") {
                 FormatRules(filters.formats, actions.onFormatStatusChange)
             }
         }
@@ -313,51 +321,146 @@ private fun ManaValueSlider(label: String, value: Int, onValueChange: (Int) -> U
 }
 
 /**
- * One chip per format. Tapping cycles that format's rule:
- *   no rule -> Legal -> Not Legal -> Banned -> Restricted -> no rule
- *
- * TODO(design): this is a placeholder. The mockup still shows a plain "Legal in" row, which
- *  can't express banned / restricted / not legal. Options: keep this cycling chip, or an
- *  "Add format rule" button that opens a format + status picker and shows `Modern · Banned`
- *  chips here.
+ * The format section: one removable chip per rule ("Modern · Banned"), then a button that opens
+ * the dialog for adding one. The rules are a Map, so a format can only have one rule at a time.
  */
 @Composable
 private fun FormatRules(
     formats: Map<String, FormatStatus>,
     onStatusChange: (String, FormatStatus?) -> Unit
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        formatOptions.forEach { format ->
-            val status = formats[format]
-            FilterChip(
-                selected = status != null,
-                onClick = { onStatusChange(format, status.next()) },
-                label = {
-                    Text(if (status == null) format.capitalized() else "${format.capitalized()}: ${status.label}")
-                }
-            )
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (formats.isEmpty()) {
+        Text(
+            "No format rules: any card",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            formats.entries.sortedBy { it.key }.forEach { (format, status) ->
+                val label = "${format.capitalized()} · ${status.label}"
+                InputChip(
+                    selected = true,
+                    // Passing null to the ViewModel removes the rule.
+                    onClick = { onStatusChange(format, null) },
+                    label = { Text(label) },
+                    trailingIcon = {
+                        Icon(Icons.Default.Close, contentDescription = "Remove $label rule", Modifier.size(16.dp))
+                    }
+                )
+            }
         }
     }
-    Text(
-        "Tap a format to cycle: any, legal, not legal, banned, restricted.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+
+    OutlinedButton(onClick = { showDialog = true }) {
+        Icon(Icons.Default.Add, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("Add format rule")
+    }
+
+    if (showDialog) {
+        AddFormatRuleDialog(
+            existing = formats,
+            onAdd = { format, status ->
+                onStatusChange(format, status)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false }
+        )
+    }
 }
 
 /**
- * An extension function on a *nullable* FormatStatus. null means "no rule", so a single `when`
- * covers the whole cycle, including wrapping back around to null.
+ * Pick a format, pick a status, tap Add. The dialog keeps its two choices in its own local state
+ * and only reports them to the ViewModel when Add is pressed, so Cancel leaves everything alone.
+ *
+ * "Restricted" is only offered for Vintage, the only format in our list that has restricted cards.
  */
-private fun FormatStatus?.next(): FormatStatus? = when (this) {
-    null -> FormatStatus.LEGAL
-    FormatStatus.LEGAL -> FormatStatus.NOT_LEGAL
-    FormatStatus.NOT_LEGAL -> FormatStatus.BANNED
-    FormatStatus.BANNED -> FormatStatus.RESTRICTED
-    FormatStatus.RESTRICTED -> null
+@Composable
+private fun AddFormatRuleDialog(
+    existing: Map<String, FormatStatus>,
+    onAdd: (String, FormatStatus) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var format by rememberSaveable { mutableStateOf<String?>(null) }
+    var status by rememberSaveable { mutableStateOf<FormatStatus?>(null) }
+
+    // Copy to local vals so Kotlin can smart-cast them from "String?" to "String" below.
+    val chosenFormat = format
+    val chosenStatus = status
+    val currentRule = chosenFormat?.let { existing[it] }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add format rule") },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("Format", style = MaterialTheme.typography.titleSmall)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    formatOptions.forEach { option ->
+                        FilterChip(
+                            selected = option == chosenFormat,
+                            onClick = {
+                                format = option
+                                // A previously chosen Restricted is no longer valid for this format.
+                                if (option != "vintage" && status == FormatStatus.RESTRICTED) status = null
+                            },
+                            label = { Text(option.capitalized()) }
+                        )
+                    }
+                }
+
+                Text("Status", style = MaterialTheme.typography.titleSmall)
+                val statuses = FormatStatus.entries
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    statuses.forEachIndexed { index, option ->
+                        SegmentedButton(
+                            selected = option == chosenStatus,
+                            onClick = { status = option },
+                            enabled = option != FormatStatus.RESTRICTED || chosenFormat == "vintage",
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = statuses.size),
+                            icon = {},
+                            // The default padding is too wide for four buttons in a dialog.
+                            contentPadding = PaddingValues(horizontal = 4.dp)
+                        ) {
+                            Text(option.label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                        }
+                    }
+                }
+
+                Text(
+                    "Restricted only applies to Vintage.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (chosenFormat != null && currentRule != null) {
+                    Text(
+                        "Replaces the current ${chosenFormat.capitalized()} · ${currentRule.label} rule.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = chosenFormat != null && chosenStatus != null,
+                onClick = { if (chosenFormat != null && chosenStatus != null) onAdd(chosenFormat, chosenStatus) }
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Preview(showBackground = true, heightDp = 900)
