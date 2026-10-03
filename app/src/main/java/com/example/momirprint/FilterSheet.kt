@@ -87,7 +87,7 @@ class FilterActions(
 
 // What the sheet offers. The lower-case strings are the words Scryfall expects in queries.
 private val cardTypeOptions = listOf(
-    "creature", "instant", "sorcery", "artifact", "enchantment", "planeswalker", "land"
+    "creature", "instant", "sorcery", "artifact", "enchantment", "planeswalker", "land", "battle"
 )
 private val colorOptions = listOf(
     'W' to "White", 'U' to "Blue", 'B' to "Black", 'R' to "Red", 'G' to "Green", 'C' to "Colorless"
@@ -169,6 +169,7 @@ fun FilterSheetContent(
 
         FilterGroup("Color") {
             FlowRow(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

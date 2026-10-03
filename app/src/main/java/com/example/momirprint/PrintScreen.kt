@@ -41,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.SubcomposeAsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.example.momirprint.ui.theme.MomirPrintTheme
 
 // ---------------------------------------------------------------------------------------------
@@ -174,9 +176,12 @@ fun PrintScreenContent(
         // TODO(design): the mockup has a caption under the card ("Best match for ...",
         //  "Random card matching your filters"). PrintUIState would need a field for it.
 
+        state.printMessage?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 8.dp))
+        }
         Button(
             onClick = actions.onPrint,
-            enabled = state.cardState == CardState.Ready,
+            enabled = state.cardState == CardState.Ready && !state.isPrinting,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(46.dp)
@@ -272,7 +277,21 @@ fun CardPreview(card: MagicCard?, cardState: CardState, modifier: Modifier = Mod
                 Text(cardState.message, textAlign = TextAlign.Center)
             }
 
-            CardState.Ready -> if (card != null) CardText(card)
+            CardState.Ready -> if (card != null) {
+                val url = card.imageUrl()
+                if (url != null) {
+                    SubcomposeAsyncImage(
+                        model = url,
+                        contentDescription = card.name,
+                        contentScale = ContentScale.Fit,
+                        loading = { CircularProgressIndicator() },
+                        error = { CardText(card) },       // image failed? show the text rendering instead
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    CardText(card)
+                }
+            }
         }
     }
 }

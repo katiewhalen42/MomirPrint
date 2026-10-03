@@ -28,10 +28,7 @@ class MainActivity : ComponentActivity() {
 
     // The printer connection is shared state (Settings connects, Print will print through it),
     // so there must be exactly one PrinterService for both screens.
-    // TODO: if this Activity is recreated (e.g. rotation) a new instance is made while existing
-    //  ViewModels keep the old one. When printing is wired up, move this to an Application-level
-    //  singleton.
-    private val printerService by lazy { PrinterService(applicationContext) }
+    private val printerService get() = (application as MomirPrintApp).printerService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +46,9 @@ class MainActivity : ComponentActivity() {
                             val printViewModel: PrintViewModel = viewModel(
                                 factory = PrintViewModelFactory(
                                     SettingsRepository(applicationContext),
-                                    ScryfallApi.service
+                                    ScryfallApi.service,
+                                    printerService,
+                                    PrintFormatter(applicationContext)
                                 )
                             )
                             PrintScreen(

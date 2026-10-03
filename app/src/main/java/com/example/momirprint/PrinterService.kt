@@ -48,8 +48,9 @@ class PrinterService(private val context: Context) {
     }
 
     fun printText(formattedText: String): Result<Unit> {
+        val p = printer ?: return Result.failure(Exception("Printer not connected"))
         return try {
-            printer?.printFormattedText(formattedText)
+            p.printFormattedText(formattedText)
             Result.success(Unit)
         } catch (e: EscPosConnectionException) {
             Result.failure(Exception("Connection error: ${e.message}"))
@@ -63,8 +64,9 @@ class PrinterService(private val context: Context) {
     }
 
     fun printImage(bitmap: android.graphics.Bitmap): Result<Unit> {
+        val p = printer ?: return Result.failure(Exception("Printer not connected"))
         return try {
-            printer?.printFormattedText("[C]<img>${com.dantsu.escposprinter.textparser.PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)}</img>\n")
+            p.printFormattedText("[C]<img>${com.dantsu.escposprinter.textparser.PrinterTextParserImg.bitmapToHexadecimalString(p, bitmap)}</img>\n")
             Result.success(Unit)
         } catch (e: EscPosConnectionException) {
             Result.failure(Exception("Connection error: ${e.message}"))
