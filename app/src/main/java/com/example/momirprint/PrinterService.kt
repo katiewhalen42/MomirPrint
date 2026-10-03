@@ -8,6 +8,8 @@ import com.dantsu.escposprinter.exceptions.EscPosConnectionException
 import com.dantsu.escposprinter.exceptions.EscPosEncodingException
 import com.dantsu.escposprinter.exceptions.EscPosParserException
 
+private const val MAX_IMAGE_SLICE_HEIGHT = 255   // the library rescales anything taller than 256
+
 class PrinterService(private val context: Context) {
 
     private var printer: EscPosPrinter? = null
@@ -47,9 +49,12 @@ class PrinterService(private val context: Context) {
         printer = null
     }
 
+    // TODO(print): add a blank buffer beneath card printings so text and image cards leave
+    //  extra trailing whitespace for folding or cutting.
     fun printText(formattedText: String): Result<Unit> {
+        val p = printer ?: return Result.failure(Exception("Printer not connected"))
         return try {
-            printer?.printFormattedText(formattedText)
+            p.printFormattedText(formattedText)
             Result.success(Unit)
         } catch (e: EscPosConnectionException) {
             Result.failure(Exception("Connection error: ${e.message}"))
@@ -63,8 +68,20 @@ class PrinterService(private val context: Context) {
     }
 
     fun printImage(bitmap: android.graphics.Bitmap): Result<Unit> {
+        val p = printer ?: return Result.failure(Exception("Printer not connected"))
         return try {
-            printer?.printFormattedText("[C]<img>${com.dantsu.escposprinter.textparser.PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)}</img>\n")
+            val markup = StringBuilder()
+            var y = 0
+            while (y < bitmap.height) {
+                val sliceHeight = minOf(MAX_IMAGE_SLICE_HEIGHT, bitmap.height - y)
+                // createBitmap(source, x, y, width, height) copies out a rectangle (a crop).
+                val slice = android.graphics.Bitmap.createBitmap(bitmap, 0, y, bitmap.width, sliceHeight)
+                markup.append(
+                    "[C]<img>${com.dantsu.escposprinter.textparser.PrinterTextParserImg.bitmapToHexadecimalString(p, slice)}</img>\n"
+                )
+                y += sliceHeight
+            }
+            p.printFormattedText(markup.toString())   // one call, so the slices print contiguously
             Result.success(Unit)
         } catch (e: EscPosConnectionException) {
             Result.failure(Exception("Connection error: ${e.message}"))

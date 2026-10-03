@@ -40,6 +40,9 @@ data class MagicCard(
     }
 }
 
+fun MagicCard.imageUrl(size: String = "normal"): String? =
+    image_uris[size] ?: card_faces.firstOrNull()?.image_uris?.get(size)
+
 data class CardSearchResponse(
     val `object`: String = "",
     val total_cards: Int = 0,

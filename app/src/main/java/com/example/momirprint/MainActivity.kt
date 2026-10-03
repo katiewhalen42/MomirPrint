@@ -14,7 +14,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.momirprint.ui.theme.MomirPrintTheme
 
+/** The app's screens. Named constants avoid typos in route strings. */
+private object Routes {
+    const val PRINT = "print"
+    const val SETTINGS = "settings"
+}
+
+/**
+ * The app's only Activity. Modern Compose apps use a single Activity as the container and draw
+ * every screen (Print, Settings) as a composable, switching between them with the NavHost below.
+ */
 class MainActivity : ComponentActivity() {
+
+    // The printer connection is shared state (Settings connects, Print will print through it),
+    // so there must be exactly one PrinterService for both screens.
+    private val printerService get() = (application as MomirPrintApp).printerService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -24,20 +39,35 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "print",
+                        startDestination = Routes.PRINT,
                         modifier = Modifier.padding(innerPadding)
-                    ){
-                        composable("print") {
-                            val printViewModel: PrintViewModel = viewModel(factory = PrintViewModelFactory(
-                                SettingsRepository(applicationContext),
-                                ScryfallApi.service))
-                            PrintScreen(viewModel = printViewModel, onSettingsClick = {
-                                navController.navigate("settings")
-                            })
+                    ) {
+                        composable(Routes.PRINT) {
+                            val printViewModel: PrintViewModel = viewModel(
+                                factory = PrintViewModelFactory(
+                                    SettingsRepository(applicationContext),
+                                    ScryfallApi.service,
+                                    printerService,
+                                    PrintFormatter(applicationContext)
+                                )
+                            )
+                            PrintScreen(
+                                viewModel = printViewModel,
+                                onSettingsClick = { navController.navigate(Routes.SETTINGS) }
+                            )
                         }
-                        /*composable("settings") {
-                            SettingsScreen(navController = navController)
-                        }*/
+                        composable(Routes.SETTINGS) {
+                            val settingsViewModel: SettingsViewModel = viewModel(
+                                factory = SettingsViewModelFactory(
+                                    SettingsRepository(applicationContext),
+                                    printerService
+                                )
+                            )
+                            SettingsScreen(
+                                viewModel = settingsViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
                 }
             }

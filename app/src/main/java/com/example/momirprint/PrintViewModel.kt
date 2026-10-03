@@ -1,18 +1,21 @@
 package com.example.momirprint
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
-enum class QueryMode{
-    RANDOM,
-    SEARCH_FILTER
+enum class QueryMode {
+    SEARCH_FILTER,
+    MOMIR
 }
 /*enum class RandomMode{
     FILTERS,
@@ -34,13 +37,17 @@ data class PrintUIState(
     val momirManaValue: Int = 4,
 
     val selectedCard: MagicCard? = null,
-    val cardState: CardState = CardState.Empty
+    val cardState: CardState = CardState.Empty,
+    val isPrinting: Boolean = false,
+    val printMessage: String? = null
 )
 
 private fun <T> Set<T>.toggled(item: T): Set<T> = if (item in this) this - item else this + item
 
 class PrintViewModel (private val settingsRepository: SettingsRepository,
-                      private val apiService: ApiService) : ViewModel() {
+                      private val apiService: ApiService,
+                      private val printerService: PrinterService,
+                      private val formatter: PrintFormatter) : ViewModel() {
 
     private val _uiState = mutableStateOf(PrintUIState())
     val uiState = _uiState
@@ -146,7 +153,44 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
     }
 
     fun print() {
-        val card = _uiState.value.selectedCard
-        //TODO: Implement printing logic using PrinterService
+        val card = _uiState.value.selectedCard ?: return
+        if (_uiState.value.isPrinting) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isPrinting = true, printMessage = null)
+
+            val result: Result<Unit> = try {
+                when (settingsRepository.printMode.first()) {
+                    PrintMode.TEXT -> {
+                        val text = formatter.formatCardText(card)
+                        if (text.isBlank()) Result.failure(Exception("This card layout can't be printed as text yet"))
+                        else withContext(Dispatchers.IO) { printerService.printText(text) }
+                    }
+                    PrintMode.IMAGE -> {
+                        val raw = card.imageUrl()?.let { formatter.loadCardBitmap(it) }
+                        if (raw == null) {
+Result.failure(Exception("No printable image is available for this card"))
+                        } else {
+                            // CPU-bound pixel crunching -> Default; blocking Bluetooth write -> IO.
+                            val bw = withContext(Dispatchers.Default) { Dither.toPrinterBitmap(raw) }
+                            Log.d("CardImage", "loaded=${raw.width}x${raw.height} dithered=${bw.width}x${bw.height}")
+                            withContext(Dispatchers.IO) { printerService.printImage(bw) }
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e                       // same rule as in loadCard()
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isPrinting = false,
+                printMessage = result.fold(
+                    onSuccess = { "Sent to printer" },
+                    onFailure = { it.message ?: "Print failed" }
+                )
+            )
+        }
     }
 }
