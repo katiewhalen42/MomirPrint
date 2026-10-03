@@ -66,7 +66,7 @@ class PrintFormatter(private val context: Context) {
                     (bitmap.height * widthPx.toFloat() / bitmap.width).roundToInt()
                 )
             }
-            is ErrorResult -> throw Exception("Image load failed: ${result.throwable}", result.throwable)
+is ErrorResult -> throw Exception("Card image could not be loaded", result.throwable)
         }
     }
 }
