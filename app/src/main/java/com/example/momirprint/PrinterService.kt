@@ -49,6 +49,8 @@ class PrinterService(private val context: Context) {
         printer = null
     }
 
+    // TODO(print): add a blank buffer beneath card printings so text and image cards leave
+    //  extra trailing whitespace for folding or cutting.
     fun printText(formattedText: String): Result<Unit> {
         val p = printer ?: return Result.failure(Exception("Printer not connected"))
         return try {

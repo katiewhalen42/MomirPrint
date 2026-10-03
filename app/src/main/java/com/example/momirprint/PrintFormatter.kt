@@ -1,6 +1,5 @@
 package com.example.momirprint
 
-import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -29,6 +28,8 @@ class PrintFormatter(private val context: Context) {
         return "[C]<img>${PrinterTextParserImg.bitmapToHexadecimalString(printer, bitmap)}</img>\n"
     }
 
+    // TODO(print): handle double-faced cards by printing the back face upside-down
+    //  before the front face so the paper can be folded.
     suspend fun formatCardText(card: MagicCard): String {
         val builder = StringBuilder()
         val repo = SettingsRepository(context)

@@ -55,7 +55,7 @@ class SettingsViewModel(
      *  manifest, but the screen must also ask for it (ActivityResultContracts.RequestPermission)
      *  before calling this, or reading a device's name throws SecurityException.
      */
-    @SuppressLint("MissingPermission")
+    //@SuppressLint("MissingPermission")
     fun scanPrinters() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isScanning = true, errorMessage = null)
