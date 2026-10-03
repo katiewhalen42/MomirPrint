@@ -285,15 +285,7 @@ fun CardPreview(card: MagicCard?, cardState: CardState, modifier: Modifier = Mod
                         contentDescription = card.name,
                         contentScale = ContentScale.Fit,
                         loading = { CircularProgressIndicator() },
-                        // TEMPORARY DEBUG: show the real exception instead of silently falling
-                        // back to CardText. Restore `error = { CardText(card) }` once fixed.
-                        error = {
-                            Text(
-                                "DEBUG image error for $url\n${it.result.throwable}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        },
+error = { CardText(card) },
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
@@ -310,9 +302,7 @@ fun CardPreview(card: MagicCard?, cardState: CardState, modifier: Modifier = Mod
 }
 
 /**
- * A plain-text rendering of the card, matching the mockup's card.
- * TODO(design): show the real card art (card.image_uris["normal"]) - needs an image-loading
- *  library such as Coil.
+ * Plain-text fallback used when card art is unavailable.
  * TODO: double-faced cards keep their text in card.card_faces, so these top-level fields are
  *  blank for them. PrintFormatter only handles layout == "normal" for the same reason.
  */
