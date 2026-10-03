@@ -1,5 +1,6 @@
 package com.example.momirprint
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -168,10 +169,11 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
                     PrintMode.IMAGE -> {
                         val raw = card.imageUrl()?.let { formatter.loadCardBitmap(it) }
                         if (raw == null) {
-                            Result.failure(Exception("Couldn't load the card image"))
+                            Result.failure(Exception("No image URL on this card (image_uris keys=${card.image_uris.keys}, faces=${card.card_faces.size})"))
                         } else {
                             // CPU-bound pixel crunching -> Default; blocking Bluetooth write -> IO.
                             val bw = withContext(Dispatchers.Default) { Dither.toPrinterBitmap(raw) }
+                            Log.d("CardImage", "loaded=${raw.width}x${raw.height} dithered=${bw.width}x${bw.height}")
                             withContext(Dispatchers.IO) { printerService.printImage(bw) }
                         }
                     }

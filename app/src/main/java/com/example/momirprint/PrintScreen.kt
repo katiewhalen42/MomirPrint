@@ -285,11 +285,24 @@ fun CardPreview(card: MagicCard?, cardState: CardState, modifier: Modifier = Mod
                         contentDescription = card.name,
                         contentScale = ContentScale.Fit,
                         loading = { CircularProgressIndicator() },
-                        error = { CardText(card) },       // image failed? show the text rendering instead
+                        // TEMPORARY DEBUG: show the real exception instead of silently falling
+                        // back to CardText. Restore `error = { CardText(card) }` once fixed.
+                        error = {
+                            Text(
+                                "DEBUG image error for $url\n${it.result.throwable}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    CardText(card)
+                    // TEMPORARY DEBUG: imageUrl() was null. Restore `CardText(card)` once fixed.
+                    Text(
+                        "DEBUG: imageUrl() is null\nimage_uris keys=${card.image_uris.keys}\nfaces=${card.card_faces.size}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

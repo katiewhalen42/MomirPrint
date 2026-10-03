@@ -9,6 +9,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 private const val SCRYFALL_BASE_URL = "https://api.scryfall.com/"
 
+/**
+ * Scryfall asks every client to send a User-Agent that names the app and not to let the HTTP
+ * library pick one. Shared so the API client (below) and the image loader (MomirPrintApp) match.
+ */
+internal const val SCRYFALL_USER_AGENT = "MomirPrint/0.1"
+
 interface ApiService {
     @GET ("cards/named")
     suspend fun getCardByName(@Query("fuzzy") name: String): MagicCard
@@ -32,7 +38,7 @@ object ScryfallApi {
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Accept", "application/json")
-                .addHeader("User-Agent", "MomirPrint/0.1")
+                .addHeader("User-Agent", SCRYFALL_USER_AGENT)
                 .build()
             chain.proceed(request)
         }
