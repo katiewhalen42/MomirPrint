@@ -1,5 +1,11 @@
 package com.example.momirprint
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,10 +33,15 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.momirprint.ui.theme.MomirPrintTheme
@@ -39,9 +50,43 @@ import com.example.momirprint.ui.theme.MomirPrintTheme
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState
+    val context = LocalContext.current
+    // true after the user has refused; drives the "open settings" hint
+    var permissionDenied by remember { mutableStateOf(false) }
+
+    // Registers the launcher. Must be called unconditionally during composition
+    // (not inside an if or a click handler).
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        permissionDenied = !granted
+        if (granted) viewModel.scanPrinters()
+    }
+
+    // Use this wherever the user triggers a Bluetooth action.
+    val scanWithPermission: () -> Unit = {
+        if (context.hasBluetoothConnectPermission()) {
+            viewModel.scanPrinters()
+        } else {
+            permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+        }
+    }
+
+    // Runs once when the screen first appears: resolves your "scan on entry" TODO,
+    // but only if permission was already granted (no surprise dialog on open).
+    LaunchedEffect(Unit) {
+        if (context.hasBluetoothConnectPermission()) viewModel.scanPrinters()
+    }
 
     SettingsScreenContent(
         state = state,
+        permissionDenied = permissionDenied,
+        onOpenAppSettings = {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", context.packageName, null))
+            )
+        },
         onBack = onBack,
         onScan = viewModel::scanPrinters,
         onConnect = viewModel::connect,
@@ -52,6 +97,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 @Composable
 fun SettingsScreenContent(
     state: SettingsUIState,
+    permissionDenied: Boolean = false,
+    onOpenAppSettings: () -> Unit = {},
     onBack: () -> Unit,
     onScan: () -> Unit,
     onConnect: (String) -> Unit,
@@ -76,13 +123,13 @@ fun SettingsScreenContent(
             Text("Settings", style = MaterialTheme.typography.titleLarge)
         }
 
-        PrinterSection(state = state, onScan = onScan, onConnect = onConnect)
+        PrinterSection(state = state, onScan = onScan, onConnect = onConnect, permissionDenied = permissionDenied, onOpenAppSettings = onOpenAppSettings)
         PrintFormatSection(selected = state.printMode, onSelected = onPrintModeSelected)
     }
 }
 
 @Composable
-private fun PrinterSection(state: SettingsUIState, onScan: () -> Unit, onConnect: (String) -> Unit) {
+private fun PrinterSection(state: SettingsUIState, onScan: () -> Unit, onConnect: (String) -> Unit, permissionDenied: Boolean = false, onOpenAppSettings: () -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionLabel("Printer")
 
@@ -109,6 +156,15 @@ private fun PrinterSection(state: SettingsUIState, onScan: () -> Unit, onConnect
                 Spacer(Modifier.width(8.dp))
                 Text(if (state.isScanning) "Scanning…" else "Scan for devices")
             }
+        }
+
+        if (permissionDenied) {
+            Text(
+                "Bluetooth permission is needed to list your paired printers.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+            TextButton(onClick = onOpenAppSettings) { Text("Open app settings") }
         }
 
         state.errorMessage?.let {

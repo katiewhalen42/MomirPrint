@@ -164,7 +164,7 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
                     PrintMode.TEXT -> {
                         val text = formatter.formatCardText(card)
                         if (text.isBlank()) Result.failure(Exception("This card layout can't be printed as text yet"))
-                        else withContext(Dispatchers.IO) { printerService.printText(text) }
+                        else printerService.printText(text)
                     }
                     PrintMode.IMAGE -> {
                         val raw = card.imageUrl()?.let { formatter.loadCardBitmap(it) }
@@ -174,7 +174,7 @@ Result.failure(Exception("No printable image is available for this card"))
                             // CPU-bound pixel crunching -> Default; blocking Bluetooth write -> IO.
                             val bw = withContext(Dispatchers.Default) { Dither.toPrinterBitmap(raw) }
                             Log.d("CardImage", "loaded=${raw.width}x${raw.height} dithered=${bw.width}x${bw.height}")
-                            withContext(Dispatchers.IO) { printerService.printImage(bw) }
+                            printerService.printImage(bw)
                         }
                     }
                 }

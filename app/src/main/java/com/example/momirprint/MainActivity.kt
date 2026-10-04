@@ -1,6 +1,7 @@
 package com.example.momirprint
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,17 +9,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.momirprint.ui.theme.MomirPrintTheme
+import kotlinx.coroutines.launch
 
 /** The app's screens. Named constants avoid typos in route strings. */
 private object Routes {
     const val PRINT = "print"
     const val SETTINGS = "settings"
 }
+
+
 
 /**
  * The app's only Activity. Modern Compose apps use a single Activity as the container and draw
@@ -71,6 +76,15 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // lifecycleScope is cancelled automatically when the Activity is destroyed.
+        lifecycleScope.launch {
+            printerService.reconnectSaved(SettingsRepository(applicationContext))
+                .onFailure { Log.d("PrinterReconnect", "Skipped: ${it.message}") }
         }
     }
 }

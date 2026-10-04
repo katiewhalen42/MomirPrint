@@ -43,7 +43,11 @@ class SettingsViewModel(
                 _uiState.value = _uiState.value.copy(printMode = mode)
             }
         }
-        // TODO: read settingsRepository.printerAddress once and try to reconnect to that printer.
+        viewModelScope.launch {
+            printerService.connectedAddress.collect { address ->
+                _uiState.value = _uiState.value.copy(connectedAddress = address)
+            }
+        }
         // TODO: call scanPrinters() on entry once the Bluetooth permission has been granted.
     }
 
@@ -88,7 +92,7 @@ class SettingsViewModel(
             result
                 .onSuccess {
                     settingsRepository.setPrinterAddress(address)
-                    _uiState.value = _uiState.value.copy(connectedAddress = address, errorMessage = null)
+                    _uiState.value = _uiState.value.copy(errorMessage = null)
                 }
                 .onFailure {
                     _uiState.value = _uiState.value.copy(errorMessage = it.message)
