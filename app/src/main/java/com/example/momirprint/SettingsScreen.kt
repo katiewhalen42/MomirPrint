@@ -87,7 +87,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             )
         },
         onBack = onBack,
-        onScan = viewModel::scanPrinters,
+        onScan = scanWithPermission,
         onConnect = viewModel::connect,
         onPrintModeSelected = viewModel::setPrintMode
     )
