@@ -1,6 +1,7 @@
 package com.example.momirprint
 
 import android.content.Context
+import android.util.Log
 import com.dantsu.escposprinter.EscPosPrinter
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnections
@@ -42,7 +43,10 @@ class PrinterService(private val context: Context) {
             _connectedAddress.value = conn.device.address
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(Exception("Failed to connect to printer"))
+            // Log the full stack trace to Logcat (filter on "PrinterService"), and put the
+            // cause in the on-screen message instead of discarding it.
+            Log.e("PrinterService", "connectToPrinter failed", e)
+            Result.failure(Exception("Failed to connect to printer: ${e.javaClass.simpleName}: ${e.message}", e))
         }
     }
 
