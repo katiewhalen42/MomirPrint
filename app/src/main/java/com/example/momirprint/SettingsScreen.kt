@@ -1,6 +1,5 @@
 package com.example.momirprint
 
-import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -56,25 +55,28 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 
     // Registers the launcher. Must be called unconditionally during composition
     // (not inside an if or a click handler).
+    // RequestMultiplePermissions shows the system dialogs for several permissions in one go and
+    // reports back a Map of permission name -> granted. We only proceed if all were granted.
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        permissionDenied = !granted
-        if (granted) viewModel.scanPrinters()
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val allGranted = results.values.all { it }
+        permissionDenied = !allGranted
+        if (allGranted) viewModel.scanPrinters()
     }
 
     // Use this wherever the user triggers a Bluetooth action.
     val scanWithPermission: () -> Unit = {
-        if (context.hasBluetoothConnectPermission()) {
+        if (context.hasBluetoothPermissions()) {
             viewModel.scanPrinters()
         } else {
-            permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+            permissionLauncher.launch(BLUETOOTH_RUNTIME_PERMISSIONS)
         }
     }
 
 
     LaunchedEffect(Unit) {
-        if (context.hasBluetoothConnectPermission()) viewModel.scanPrinters()
+        if (context.hasBluetoothPermissions()) viewModel.scanPrinters()
     }
 
     SettingsScreenContent(
@@ -87,7 +89,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
             )
         },
         onBack = onBack,
-        onScan = viewModel::scanPrinters,
+        onScan = scanWithPermission,
         onConnect = viewModel::connect,
         onPrintModeSelected = viewModel::setPrintMode
     )
