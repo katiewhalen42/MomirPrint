@@ -66,7 +66,7 @@ class PrinterService(private val context: Context) {
             // Bluetooth calls block, so run on the IO thread pool, not the main thread.
             withContext(Dispatchers.IO) {
                 if (isConnected()) return@withContext Result.success(Unit)
-                if (!context.hasBluetoothConnectPermission()) {
+                if (!context.hasBluetoothPermissions()) {
                     return@withContext Result.failure(Exception("Bluetooth permission not granted"))
                 }
                 // first() reads the Flow once and stops: "give me the current value".
