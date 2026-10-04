@@ -47,8 +47,6 @@ class SettingsRepository(private val context: Context) {
         preferences[PRINTER_ADDRESS] ?: DEFAULT_PRINTER_ADDRESS
     }
 
-    // TODO(settings): restore this saved printer address on app launch so the last connected
-    //  printer survives app restarts.
     suspend fun setPrintMode(mode: PrintMode) {
         context.dataStore.edit { preferences ->
             preferences[PRINT_MODE] = mode.storedValue

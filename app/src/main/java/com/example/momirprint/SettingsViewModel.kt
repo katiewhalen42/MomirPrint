@@ -48,16 +48,11 @@ class SettingsViewModel(
                 _uiState.value = _uiState.value.copy(connectedAddress = address)
             }
         }
-        // TODO: call scanPrinters() on entry once the Bluetooth permission has been granted.
     }
 
     /**
      * Lists the printers already paired in Android's Bluetooth settings. (This doesn't discover
      * new devices; the design's "Scan for devices" button refreshes this list.)
-     *
-     * TODO: on Android 12+ BLUETOOTH_CONNECT is a runtime permission. It is declared in the
-     *  manifest, but the screen must also ask for it (ActivityResultContracts.RequestPermission)
-     *  before calling this, or reading a device's name throws SecurityException.
      */
     //@SuppressLint("MissingPermission")
     fun scanPrinters() {

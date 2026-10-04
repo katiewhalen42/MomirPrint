@@ -72,8 +72,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
         }
     }
 
-    // Runs once when the screen first appears: resolves your "scan on entry" TODO,
-    // but only if permission was already granted (no surprise dialog on open).
+
     LaunchedEffect(Unit) {
         if (context.hasBluetoothConnectPermission()) viewModel.scanPrinters()
     }

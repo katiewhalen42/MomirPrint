@@ -125,7 +125,6 @@ class PrinterService(private val context: Context) {
         }
     }*/
 
-    // TODO(print): add a blank buffer beneath card printings
     suspend fun printText(formattedText: String): Result<Unit> =
         printWithRetry { p -> p.printFormattedText(formattedText) }
 

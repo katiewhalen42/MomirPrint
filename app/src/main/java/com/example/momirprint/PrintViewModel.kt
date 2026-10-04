@@ -167,9 +167,10 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
                         else printerService.printText(text)
                     }
                     PrintMode.IMAGE -> {
-                        val raw = card.imageUrl()?.let { formatter.loadCardBitmap(it) }
+                        val faces = formatter.loadCardBitmapsForPrint(card)
+                        val raw = formatter.combineBitmapsVertically(faces)
                         if (raw == null) {
-Result.failure(Exception("No printable image is available for this card"))
+                            Result.failure(Exception("No printable image is available for this card"))
                         } else {
                             // CPU-bound pixel crunching -> Default; blocking Bluetooth write -> IO.
                             val bw = withContext(Dispatchers.Default) { Dither.toPrinterBitmap(raw) }

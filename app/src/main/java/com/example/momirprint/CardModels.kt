@@ -43,10 +43,24 @@ data class MagicCard(
 fun MagicCard.imageUrl(size: String = "normal"): String? =
     image_uris[size] ?: card_faces.firstOrNull()?.image_uris?.get(size)
 
+fun MagicCard.isFoldableDoubleFaced(): Boolean =
+    layout in setOf("transform", "modal_dfc") && card_faces.size >= 2
+
+fun MagicCard.printableFacesInOrder(): List<CardFace> {
+    if (!isFoldableDoubleFaced()) return card_faces.take(1)
+    // Requested print order: front face first, then the back face.
+    return listOf(card_faces[0], card_faces[1])
+}
+
+fun MagicCard.printableImageUrlsInOrder(size: String = "normal"): List<String> {
+    val faceUrls = printableFacesInOrder().mapNotNull { it.image_uris[size] }
+    if (faceUrls.isNotEmpty()) return faceUrls
+    return imageUrl(size)?.let(::listOf) ?: emptyList()
+}
+
 data class CardSearchResponse(
     val `object`: String = "",
     val total_cards: Int = 0,
     val has_more: Boolean = false,
     val data: List<MagicCard> = emptyList()
 )
-
