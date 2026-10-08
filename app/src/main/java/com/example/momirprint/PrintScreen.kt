@@ -96,6 +96,7 @@ private fun rememberPrintActions(viewModel: PrintViewModel): PrintActions = reme
         filters = FilterActions(
             onToggleType = viewModel::toggleCardType,
             onToggleColor = viewModel::toggleColor,
+            onToggleColorIdentity = viewModel::toggleColorIdentity,
             onColorMatchChange = viewModel::setColorMatch,
             onMinManaValueChange = viewModel::setMinManaValue,
             onMaxManaValueChange = viewModel::setMaxManaValue,

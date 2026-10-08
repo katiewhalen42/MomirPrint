@@ -149,6 +149,12 @@ fun activeFilterChips(filters: CardFilters, actions: FilterActions): List<Active
         chips += ActiveFilterChip(label) { filters.colors.forEach(actions.onToggleColor) }
     }
 
+    if (filters.colorId.isNotEmpty()) {
+        val letters = filters.colorId.sortedBy { "WUBRGC".indexOf(it) }.joinToString(" ")
+        val label = if ('C' in filters.colorId) "Identity: Colorless" else "Identity <= $letters"
+        chips += ActiveFilterChip(label) { filters.colorId.forEach(actions.onToggleColorIdentity) }
+    }
+
     if (filters.minManaValue > 0 || filters.maxManaValue < MAX_MANA_VALUE) {
         chips += ActiveFilterChip(manaValueLabel(filters.minManaValue, filters.maxManaValue)) {
             actions.onMinManaValueChange(0)

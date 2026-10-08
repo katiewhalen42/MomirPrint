@@ -31,7 +31,7 @@ data class CardFilters(
     val types: Set<String> = emptySet(), //Lower-case words, e.g. "creature", "artifact", "planeswalker"
     val colors: Set<Char> = emptySet(), //"WUBRG" characters
     val colorMatch: ColorMatch = ColorMatch.INCLUDES,
-    val colorId: Set<Char> = emptySet(), //"WUBRG" characters
+    val colorId: Set<Char> = emptySet(), //"WUBRGC" characters; queried as color identity (id<=...)
     val minManaValue: Int = 0,
     val maxManaValue: Int = MAX_MANA_VALUE,
     val rarities: Set<String> = emptySet(), //Lower-case words, e.g. "common", "uncommon", "rare", "mythic"
@@ -42,6 +42,7 @@ data class CardFilters(
 object ScryfallQueryBuilder {
     //Canonical color order
     private const val COLOR_ORDER = "WUBRG"
+    private const val COLOR_AND_COLORLESS_ORDER = "WUBRGC"
 
     fun build(filters: CardFilters): String {
         //If the custom query is filled, use it above all else
@@ -51,6 +52,7 @@ object ScryfallQueryBuilder {
 
         orGroup("t", filters.types)?.let { parts.add(it) }
         colorClause(filters)?.let { parts.add(it) }
+        colorIdentityClause(filters.colorId)?.let { parts.add(it) }
         manaValueClause(filters.minManaValue, filters.maxManaValue)?.let { parts.add(it) }
         orGroup("r", filters.rarities)?.let { parts.add(it) }
 
@@ -81,6 +83,17 @@ object ScryfallQueryBuilder {
             .sortedBy { COLOR_ORDER.indexOf(it) }
             .joinToString("")
         return "c${filters.colorMatch.operator}$letters"
+    }
+
+    /** Color identity is always "At Most" so Commander-friendly searches are the default. */
+    private fun colorIdentityClause(colorId: Set<Char>): String? {
+        if (colorId.isEmpty()) return null
+        // Colorless identity is exclusive with W/U/B/R/G in the UI; this keeps query output stable.
+        if ('C' in colorId) return "id:c"
+        val letters = colorId
+            .sortedBy { COLOR_AND_COLORLESS_ORDER.indexOf(it) }
+            .joinToString("")
+        return "id<=$letters"
     }
 
     /** Leaves out any bound that is at its default, so an untouched slider adds nothing. */

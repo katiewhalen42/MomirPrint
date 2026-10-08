@@ -38,4 +38,28 @@ class ExampleUnitTest {
 
         assertEquals(listOf("https://img/front.jpg"), card.printableImageUrlsInOrder())
     }
+
+    @Test
+    fun query_builder_adds_color_identity_with_at_most_logic() {
+        val query = ScryfallQueryBuilder.build(CardFilters(colorId = setOf('U', 'W')))
+
+        assertEquals("id<=WU", query)
+    }
+
+    @Test
+    fun query_builder_uses_colorless_identity_clause() {
+        val query = ScryfallQueryBuilder.build(CardFilters(colorId = setOf('C')))
+
+        assertEquals("id:c", query)
+    }
+
+    @Test
+    fun active_filter_chips_include_color_identity_chip() {
+        val chips = activeFilterChips(
+            filters = CardFilters(colorId = setOf('W', 'U')),
+            actions = FilterActions()
+        )
+
+        assertTrue(chips.any { it.label == "Identity <= W U" })
+    }
 }

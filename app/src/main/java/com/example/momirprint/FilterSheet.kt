@@ -3,6 +3,7 @@
 package com.example.momirprint
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,6 +78,7 @@ import kotlin.math.roundToInt
 class FilterActions(
     val onToggleType: (String) -> Unit = {},
     val onToggleColor: (Char) -> Unit = {},
+    val onToggleColorIdentity: (Char) -> Unit = {},
     val onColorMatchChange: (ColorMatch) -> Unit = {},
     val onMinManaValueChange: (Int) -> Unit = {},
     val onMaxManaValueChange: (Int) -> Unit = {},
@@ -190,6 +193,23 @@ fun FilterSheetContent(
                 enabled = filters.colors.isNotEmpty() && 'C' !in filters.colors,
                 onSelected = actions.onColorMatchChange
             )
+        }
+
+        FilterGroup("Color identity") {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                colorOptions.forEach { (code, name) ->
+                    FilterChip(
+                        selected = code in filters.colorId,
+                        onClick = { actions.onToggleColorIdentity(code) },
+                        label = { Text(code.toString()) },
+                        modifier = Modifier.semantics { contentDescription = "Identity: $name" }
+                    )
+                }
+            }
         }
 
         FilterGroup("Mana value (${manaValueLabel(filters.minManaValue, filters.maxManaValue)})") {

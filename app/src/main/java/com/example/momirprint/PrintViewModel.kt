@@ -84,6 +84,15 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
 
     fun setColorMatch(match: ColorMatch) = updateFilters { it.copy(colorMatch = match) }
 
+    fun toggleColorIdentity(color: Char) = updateFilters { f ->
+        val colorId = when {
+            // Colorless is exclusive: picking it clears the real colors, and vice versa.
+            color == 'C' -> if ('C' in f.colorId) emptySet<Char>() else setOf('C')
+            else -> (f.colorId - 'C').toggled(color)
+        }
+        f.copy(colorId = colorId)
+    }
+
     // Dragging one slider past the other pushes the other along, so min <= max always holds.
     fun setMinManaValue(value: Int) = updateFilters {
         it.copy(minManaValue = value, maxManaValue = maxOf(value, it.maxManaValue))
