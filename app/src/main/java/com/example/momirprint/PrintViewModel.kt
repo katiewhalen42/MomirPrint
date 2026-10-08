@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -31,11 +32,10 @@ sealed interface CardState {
 
 data class PrintUIState(
     val queryMode: QueryMode = QueryMode.SEARCH_FILTER,
-    //val randomMode: RandomMode = RandomMode.FILTERS,
     val searchText: String = "",
     val filters: CardFilters = CardFilters(),
     val momirManaValue: Int = 4,
-
+    val suggestions: List<String> = emptyList(),
     val selectedCard: MagicCard? = null,
     val cardState: CardState = CardState.Empty,
     val isPrinting: Boolean = false,
@@ -51,13 +51,10 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
 
     private val _uiState = mutableStateOf(PrintUIState())
     val uiState = _uiState
+    private var suggestJob: Job? = null
 
     fun setMode(queryMode: QueryMode) {
         _uiState.value = _uiState.value.copy(queryMode = queryMode)
-    }
-
-    fun setSearchText(searchText: String) {
-        _uiState.value = _uiState.value.copy(searchText = searchText)
     }
 
     fun setMomirManaValue(value: Int) {
@@ -112,6 +109,37 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
     fun setCustomQuery(query: String) = updateFilters { it.copy(customQuery = query) }
 
     fun resetFilters() = updateFilters { CardFilters() }
+
+    fun setSearchText(searchText: String) {
+        _uiState.value = _uiState.value.copy(searchText = searchText)
+        suggestJob?.cancel()
+        val query = searchText.trim()
+        if (query.length < 2) {
+            _uiState.value = _uiState.value.copy(suggestions = emptyList())
+            return
+        }
+        suggestJob = viewModelScope.launch {
+            try {
+                val names = apiService.getCardAutocomplete(query).data
+                _uiState.value = _uiState.value.copy(suggestions = names)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(suggestions = emptyList())
+            }
+        }
+    }
+
+    fun selectSuggestion(name: String) {
+        _uiState.value = _uiState.value.copy(searchText = name)
+        dismissSuggestions()
+        search()                                   // reads searchText from state, which is now the exact name
+    }
+
+    fun dismissSuggestions() {
+        suggestJob?.cancel()
+        _uiState.value = _uiState.value.copy(suggestions = emptyList())
+    }
 
     // ---- Fetching a card ------------------------------------------------------------------
 

@@ -64,3 +64,9 @@ data class CardSearchResponse(
     val has_more: Boolean = false,
     val data: List<MagicCard> = emptyList()
 )
+
+data class AutocompleteResponse(
+    val `object`: String = "",
+    val total_cards: Int = 0,
+    val data: List<String> = emptyList()
+)

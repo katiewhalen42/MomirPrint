@@ -25,8 +25,8 @@ interface ApiService {
     @GET ("cards/search")
     suspend fun searchCards(@Query("q") query: String): CardSearchResponse
 
-    //@GET ("cards/autocomplete")
-    //suspend fun getCardAutocomplete(@Query("q") query: String): AutocompleteResponse
+    @GET ("cards/autocomplete")
+    suspend fun getCardAutocomplete(@Query("q") query: String): AutocompleteResponse
 }
 
 object ScryfallApi {

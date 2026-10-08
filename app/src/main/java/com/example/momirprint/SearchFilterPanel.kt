@@ -17,6 +17,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
@@ -54,16 +58,7 @@ fun SearchFilterPanel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
-                value = state.searchText,
-                onValueChange = actions.onSearchTextChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Search by card name") },
-                singleLine = true,
-                // Show a "search" key on the keyboard and run the search when it's pressed.
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { actions.onSearch() })
-            )
+            CardNameField(state, actions, Modifier.weight(1f))
             FilledTonalIconButton(onClick = actions.onSearch) {
                 Icon(Icons.Default.Search, contentDescription = "Search")
             }
@@ -86,6 +81,39 @@ fun SearchFilterPanel(
             Icon(Icons.Default.Casino, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text("Random card from filters")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardNameField(state: PrintUIState, actions: PrintActions, modifier: Modifier) {
+    ExposedDropdownMenuBox(
+        expanded = state.suggestions.isNotEmpty(),   // the menu is open exactly when there is something to show
+        onExpandedChange = {},                       // we drive it from state, ignore the box's own toggling
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = state.searchText,
+            onValueChange = actions.onSearchTextChange,
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                .fillMaxWidth(),
+            placeholder = { Text("Search by card name") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { actions.onSearch() })
+        )
+        ExposedDropdownMenu(
+            expanded = state.suggestions.isNotEmpty(),
+            onDismissRequest = actions.onDismissSuggestions
+        ) {
+            state.suggestions.forEach { name ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = { actions.onSuggestionSelected(name) }
+                )
+            }
         }
     }
 }
