@@ -16,7 +16,8 @@ import kotlin.coroutines.cancellation.CancellationException
 
 enum class QueryMode {
     SEARCH_FILTER,
-    MOMIR
+    MOMIR,
+    TOKEN
 }
 /*enum class RandomMode{
     FILTERS,
@@ -39,7 +40,9 @@ data class PrintUIState(
     val selectedCard: MagicCard? = null,
     val cardState: CardState = CardState.Empty,
     val isPrinting: Boolean = false,
-    val printMessage: String? = null
+    val printMessage: String? = null,
+    val tokenSource: MagicCard? = null,
+    //val customToken: CustomTokenDraft = CustomTokenDraft()
 )
 
 private fun <T> Set<T>.toggled(item: T): Set<T> = if (item in this) this - item else this + item

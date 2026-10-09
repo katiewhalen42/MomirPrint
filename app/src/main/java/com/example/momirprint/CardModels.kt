@@ -83,3 +83,4 @@ data class AutocompleteResponse(
     val total_cards: Int = 0,
     val data: List<String> = emptyList()
 )
+
