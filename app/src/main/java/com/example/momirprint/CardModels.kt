@@ -24,7 +24,8 @@ data class MagicCard(
     val card_faces: List<CardFace> = emptyList<CardFace>(),
     val color_indicator: List<String> = emptyList(),
     val image_uris: Map<String, String> = emptyMap(),
-    val scryfall_uri: String = ""
+    val scryfall_uri: String = "",
+    val all_parts: List<RelatedCard> = emptyList()
 ) {
     override fun toString(): String {
         return("Name: $name\n" +
@@ -38,7 +39,19 @@ data class MagicCard(
         "Color Indicator: $color_indicator\n" +
         "Image URIs: $image_uris")
     }
+
+    fun tokenParts(): List<RelatedCard> {
+        return all_parts.filter { it.component == "token" }.distinctBy { it.id }
+    }
 }
+
+data class RelatedCard(
+    val id: String = "",
+    val component: String = "",
+    val name: String = "",
+    val type_line: String = "",
+    val uri: String = ""
+)
 
 fun MagicCard.imageUrl(size: String = "normal"): String? =
     image_uris[size] ?: card_faces.firstOrNull()?.image_uris?.get(size)

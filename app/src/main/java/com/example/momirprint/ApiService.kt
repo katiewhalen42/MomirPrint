@@ -6,6 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Query
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Url
 
 private const val SCRYFALL_BASE_URL = "https://api.scryfall.com/"
 
@@ -27,6 +28,9 @@ interface ApiService {
 
     @GET ("cards/autocomplete")
     suspend fun getCardAutocomplete(@Query("q") query: String): AutocompleteResponse
+
+    @GET
+    suspend fun getCardByUri(@Url url: String): MagicCard
 }
 
 object ScryfallApi {
