@@ -42,7 +42,15 @@ data class PrintUIState(
     val cardState: CardState = CardState.Empty,
     val isPrinting: Boolean = false,
     val printMessage: String? = null,
+    // ---- Tokens tab ----
+    // Its own text, so searching on one tab doesn't leave stale text in the other tab's field.
+    val tokenSearchText: String = "",
+    // The card whose tokens the dropdown lists. Separate from selectedCard on purpose:
+    // selectedCard is the shared preview, and picking a card here must not replace it.
     val tokenSource: MagicCard? = null,
+    // The dropdown's current choice. This is the thin stub from all_parts (name, type line, uri);
+    // the full token card is what ends up in selectedCard.
+    val selectedToken: RelatedCard? = null
     //val customToken: CustomTokenDraft = CustomTokenDraft()
 )
 
@@ -58,6 +66,9 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
     private var suggestJob: Job? = null
 
     fun setMode(queryMode: QueryMode) {
+        // Both name fields share one suggestions list, so close it when the tab changes;
+        // otherwise a menu opened on one tab would reappear under the other tab's field.
+        dismissSuggestions()
         _uiState.value = _uiState.value.copy(queryMode = queryMode)
     }
 
@@ -116,8 +127,18 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
 
     fun setSearchText(searchText: String) {
         _uiState.value = _uiState.value.copy(searchText = searchText)
+        requestSuggestions(searchText)
+    }
+
+    fun setTokenSearchText(text: String) {
+        _uiState.value = _uiState.value.copy(tokenSearchText = text)
+        requestSuggestions(text)
+    }
+
+    /** Debounced autocomplete, shared by both name fields (only one is on screen at a time). */
+    private fun requestSuggestions(text: String) {
         suggestJob?.cancel()
-        val query = searchText.trim()
+        val query = text.trim()
         if (query.length < 2) {
             _uiState.value = _uiState.value.copy(suggestions = emptyList())
             return
@@ -177,13 +198,20 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
     /**
      * Shared loading / success / error handling. `fetch` is a suspend lambda: a block of code
      * that is allowed to wait for the network without freezing the UI thread.
+     *
+     * `onLoaded` decides what to do with the card once it arrives. By default it goes in the
+     * preview (showCard). The Tokens tab overrides that to store the card somewhere else.
+     * It comes first and has a default, so the existing `loadCard { ... }` calls still compile:
+     * a trailing lambda always binds to the LAST parameter, which is `fetch`.
      */
-    private fun loadCard(fetch: suspend () -> MagicCard) {
+    private fun loadCard(
+        onLoaded: (MagicCard) -> Unit = { showCard(it) },
+        fetch: suspend () -> MagicCard
+    ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(cardState = CardState.Loading)
             try {
-                val card = fetch()
-                _uiState.value = _uiState.value.copy(selectedCard = card, cardState = CardState.Ready)
+                onLoaded(fetch())
             } catch (e: CancellationException) {
                 // Coroutines cancel by throwing. Swallowing it would break cancellation, so re-throw.
                 throw e
@@ -199,6 +227,54 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
                 _uiState.value = _uiState.value.copy(cardState = CardState.Error(e.message ?: "Unknown error"))
             }
         }
+    }
+
+    /** Puts a fetched card in the shared preview. What every tab does when a lookup succeeds. */
+    private fun showCard(card: MagicCard) {
+        _uiState.value = _uiState.value.copy(selectedCard = card, cardState = CardState.Ready)
+    }
+
+    // ---- Tokens tab -----------------------------------------------------------------------
+    // Two steps: (1) look up the card that makes tokens, (2) pick one of its tokens.
+
+    /** The user picked an autocomplete suggestion in the Tokens tab's name field. */
+    fun selectTokenSourceSuggestion(name: String) {
+        _uiState.value = _uiState.value.copy(tokenSearchText = name)
+        searchTokenSource()
+    }
+
+    /**
+     * Step 1: look up the card. Unlike the other tabs, the result does NOT go in the preview:
+     * it goes in tokenSource, which fills the dropdown. The preview only changes in step 2.
+     */
+    fun searchTokenSource() {
+        val name = _uiState.value.tokenSearchText.trim()
+        if (name.isEmpty()) return
+        dismissSuggestions()
+        loadCard(onLoaded = { onTokenSourceLoaded(it) }) { apiService.getCardByName(name) }
+    }
+
+    private fun onTokenSourceLoaded(source: MagicCard) {
+        val state = _uiState.value
+        _uiState.value = state.copy(
+            tokenSource = source,
+            selectedToken = null,
+            // loadCard switched cardState to Loading before the fetch. We aren't replacing the
+            // preview, so restore it to what it was showing before the lookup.
+            cardState = if (state.selectedCard != null) CardState.Ready else CardState.Empty
+        )
+        // A card with exactly one token needs no choosing, so select it for the user.
+        // singleOrNull() gives the element if there is exactly one, and null for zero or several.
+        source.tokenParts().singleOrNull()?.let { selectToken(it) }
+    }
+
+    /**
+     * Step 2: the user picked a token. The stub in all_parts has no image or power/toughness, so
+     * this fetches the full card from the stub's own URL (the "lazy fetch") into the preview.
+     */
+    fun selectToken(token: RelatedCard) {
+        _uiState.value = _uiState.value.copy(selectedToken = token)
+        loadCard { apiService.getCardByUri(token.uri) }
     }
 
     fun print() {
