@@ -9,29 +9,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 
 /**
@@ -58,7 +50,15 @@ fun SearchFilterPanel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            CardNameField(state, actions, Modifier.weight(1f))
+            CardNameField(
+                value = state.searchText,
+                suggestions = state.suggestions,
+                onValueChange = actions.onSearchTextChange,
+                onSearch = actions.onSearch,
+                onSuggestionSelected = actions.onSuggestionSelected,
+                onDismissSuggestions = actions.onDismissSuggestions,
+                modifier = Modifier.weight(1f)
+            )
             FilledTonalIconButton(onClick = actions.onSearch) {
                 Icon(Icons.Default.Search, contentDescription = "Search")
             }
@@ -81,39 +81,6 @@ fun SearchFilterPanel(
             Icon(Icons.Default.Casino, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text("Random card from filters")
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CardNameField(state: PrintUIState, actions: PrintActions, modifier: Modifier) {
-    ExposedDropdownMenuBox(
-        expanded = state.suggestions.isNotEmpty(),   // the menu is open exactly when there is something to show
-        onExpandedChange = {},                       // we drive it from state, ignore the box's own toggling
-        modifier = modifier
-    ) {
-        OutlinedTextField(
-            value = state.searchText,
-            onValueChange = actions.onSearchTextChange,
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                .fillMaxWidth(),
-            placeholder = { Text("Search by card name") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { actions.onSearch() })
-        )
-        ExposedDropdownMenu(
-            expanded = state.suggestions.isNotEmpty(),
-            onDismissRequest = actions.onDismissSuggestions
-        ) {
-            state.suggestions.forEach { name ->
-                DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = { actions.onSuggestionSelected(name) }
-                )
-            }
         }
     }
 }

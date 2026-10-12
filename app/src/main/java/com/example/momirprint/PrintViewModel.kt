@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -122,6 +123,11 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
             return
         }
         suggestJob = viewModelScope.launch {
+            // Debounce: wait for a pause in typing. If another keystroke arrives during these
+            // 300 ms, the line above cancels this coroutine, delay() throws a CancellationException,
+            // and the network request below is never sent. Only the last keystroke of a burst
+            // gets as far as the API. (Scryfall asks clients to space out their requests.)
+            delay(300)
             try {
                 val names = apiService.getCardAutocomplete(query).data
                 _uiState.value = _uiState.value.copy(suggestions = names)
@@ -150,6 +156,9 @@ class PrintViewModel (private val settingsRepository: SettingsRepository,
     fun search() {
         val name = _uiState.value.searchText.trim()
         if (name.isEmpty()) return
+        // Close the dropdown and cancel any lookup still in flight. Otherwise a slow autocomplete
+        // response could arrive after the card loads and pop the menu open again.
+        dismissSuggestions()
         loadCard { apiService.getCardByName(name) }
     }
 
