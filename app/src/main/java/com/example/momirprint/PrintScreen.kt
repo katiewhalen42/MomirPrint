@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -73,6 +74,12 @@ class PrintActions(
     val onDrawRandom: () -> Unit = {},
     val onMomirManaValueChange: (Int) -> Unit = {},
     val onDrawMomir: () -> Unit = {},
+    // Tokens tab: these mirror the search-tab callbacks above, but act on tokenSearchText
+    // and tokenSource instead of searchText and the preview.
+    val onTokenSearchTextChange: (String) -> Unit = {},
+    val onTokenSearch: () -> Unit = {},
+    val onTokenSourceSuggestionSelected: (String) -> Unit = {},
+    val onTokenSelected: (RelatedCard) -> Unit = {},
     val onPrint: () -> Unit = {},
     val filters: FilterActions = FilterActions()
 )
@@ -96,6 +103,10 @@ private fun rememberPrintActions(viewModel: PrintViewModel): PrintActions = reme
         onDrawRandom = viewModel::drawRandom,
         onMomirManaValueChange = viewModel::setMomirManaValue,
         onDrawMomir = viewModel::drawMomir,
+        onTokenSearchTextChange = viewModel::setTokenSearchText,
+        onTokenSearch = viewModel::searchTokenSource,
+        onTokenSourceSuggestionSelected = viewModel::selectTokenSourceSuggestion,
+        onTokenSelected = viewModel::selectToken,
         onPrint = viewModel::print,
         filters = FilterActions(
             onToggleType = viewModel::toggleCardType,
@@ -159,6 +170,8 @@ fun PrintScreenContent(
                 onManaValueChange = actions.onMomirManaValueChange,
                 onDraw = actions.onDrawMomir
             )
+
+            QueryMode.TOKEN -> TokenPanel(state = state, actions = actions)
         }
 
         // The preview takes all the height the controls above and the button below leave over.
@@ -228,6 +241,7 @@ private fun PrintHeader(onSettingsClick: () -> Unit) {
 private fun QueryMode.label(): String = when (this) {
     QueryMode.SEARCH_FILTER -> "Search & filter"
     QueryMode.MOMIR -> "Momir"
+    QueryMode.TOKEN -> "Tokens"
 }
 
 @Composable
@@ -240,9 +254,12 @@ private fun PrintModeTabs(selectedMode: QueryMode, onModeSelected: (QueryMode) -
                 selected = mode == selectedMode,
                 onClick = { onModeSelected(mode) },
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                icon = {} // hides the default check mark
+                icon = {}, // hides the default check mark
+                // With three tabs each button is only a third of the width, and the default
+                // side padding would wrap "Search & filter" onto two lines.
+                contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                Text(text = mode.label())
+                Text(text = mode.label(), maxLines = 1)
             }
         }
     }

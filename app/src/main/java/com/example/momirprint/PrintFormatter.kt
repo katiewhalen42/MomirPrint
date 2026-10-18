@@ -55,7 +55,10 @@ class PrintFormatter(private val context: Context) {
                     builder.append(FACE_SEPARATOR)
                 }
             }
-        } else if (card.layout == "normal") {
+        } else if (card.layout == "normal" || card.layout == "token") {
+            // Tokens have the same fields as a normal card (name, type line, rules text,
+            // power/toughness). They have no mana cost, so that slot just prints empty.
+            // The rarer "double_faced_token" layout isn't handled yet; it still prints blank.
             appendFaceText(
                 builder = builder,
                 name = card.name,
